@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sdf version='1.9'>
+  <model name='x500_lidar_3d'>
+    <include merge='true'>
+      <uri>x500</uri>
+    </include>
+    <!-- LiDAR mass and box inertia use the Livox Mid-360 dimensions. -->
+    <link name="lidar_sensor_link">
+      <pose relative_to="base_link">0 0 0.18 0 0 0</pose>
+      <inertial>
+        <mass>0.265</mass>
+        <inertia>
+          <ixx>0.0001728</ixx>
+          <iyy>0.0001728</iyy>
+          <izz>0.0001866</izz>
+          <ixy>0.0</ixy>
+          <ixz>0.0</ixz>
+          <iyz>0.0</iyz>
+        </inertia>
+      </inertial>
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>model://lidar_2d_v2/meshes/lidar_2d_v2.dae</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="collision">
+        <geometry>
+          <cylinder>
+            <radius>0.05</radius>
+            <length>0.08</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <sensor name='lidar_3d' type='gpu_lidar'>
+        <gz_frame_id>lidar_sensor_link</gz_frame_id>
+        <topic>lidar_3d</topic>
+        <pose>0 0 0 0 0 0</pose>
+        <update_rate>10</update_rate>
+        <ray>
+          <scan>
+            <horizontal>
+              <samples>360</samples>
+              <resolution>1</resolution>
+              <min_angle>-3.141593</min_angle>
+              <max_angle>3.141593</max_angle>
+            </horizontal>
+            <vertical>
+              <samples>16</samples>
+              <resolution>1</resolution>
+              <min_angle>-0.261799</min_angle>
+              <max_angle>0.261799</max_angle>
+            </vertical>
+          </scan>
+          <range>
+            <min>0.3</min>
+            <max>30.0</max>
+            <resolution>0.01</resolution>
+          </range>
+          <noise>
+            <type>gaussian</type>
+            <mean>0.0</mean>
+            <stddev>0.02</stddev>
+          </noise>
+        </ray>
+        <always_on>1</always_on>
+        <visualize>false</visualize>
+      </sensor>
+    </link>
+    <joint name="lidar_sensor_joint" type="fixed">
+      <parent>base_link</parent>
+      <child>lidar_sensor_link</child>
+    </joint>
+    <!-- Two-axis gimbal. Joint pitch equals camera pitch minus pi/2. -->
+    <link name="gimbal_yaw_link">
+      <pose relative_to="base_link">0.06 0 -0.05 0 0 0</pose>
+      <inertial>
+        <mass>0.015</mass>
+        <inertia>
+          <ixx>0.00000478</ixx>
+          <iyy>0.00000641</iyy>
+          <izz>0.00001063</izz>
+          <ixy>0.0</ixy>
+          <ixz>0.0</ixz>
+          <iyz>0.0</iyz>
+        </inertia>
+      </inertial>
+      <visual name="yaw_hub_visual">
+        <geometry>
+          <cylinder>
+            <radius>0.025</radius>
+            <length>0.014</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <ambient>0.2 0.2 0.2 1</ambient>
+          <diffuse>0.25 0.25 0.25 1</diffuse>
+        </material>
+      </visual>
+      <visual name="left_arm_visual">
+        <pose>0 0.028 -0.025 0 0 0</pose>
+        <geometry><box><size>0.012 0.010 0.050</size></box></geometry>
+        <material>
+          <ambient>0.15 0.15 0.15 1</ambient>
+          <diffuse>0.2 0.2 0.2 1</diffuse>
+        </material>
+      </visual>
+      <visual name="right_arm_visual">
+        <pose>0 -0.028 -0.025 0 0 0</pose>
+        <geometry><box><size>0.012 0.010 0.050</size></box></geometry>
+        <material>
+          <ambient>0.15 0.15 0.15 1</ambient>
+          <diffuse>0.2 0.2 0.2 1</diffuse>
+        </material>
+      </visual>
+    </link>
+    <joint name="gimbal_yaw_joint" type="revolute">
+      <parent>base_link</parent>
+      <child>gimbal_yaw_link</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-2.967060</lower>
+          <upper>2.967060</upper>
+          <effort>1.0</effort>
+          <velocity>1.570796</velocity>
+        </limit>
+        <dynamics><damping>0.08</damping></dynamics>
+      </axis>
+    </joint>
+
+    <!-- Raspberry Pi HQ camera with a 6 mm lens and 55.3 degree FOV. -->
+    <link name="camera_sensor_link">
+      <!-- +90deg mechanical offset keeps the uncommanded view downward. -->
+      <pose relative_to="gimbal_yaw_link">0 0 -0.035 0 1.570796 0</pose>
+      <!-- The remaining 75g includes camera, lens and pitch cradle. -->
+      <inertial>
+        <mass>0.075</mass>
+        <inertia>
+          <ixx>0.00001153</ixx>
+          <iyy>0.00001153</iyy>
+          <izz>0.00001805</izz>
+          <ixy>0.0</ixy>
+          <ixz>0.0</ixz>
+          <iyz>0.0</iyz>
+        </inertia>
+      </inertial>
+      <visual name="camera_visual">
+        <geometry>
+          <box>
+            <size>0.038 0.038 0.02</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.1 0.1 0.1 1</ambient>
+          <diffuse>0.1 0.1 0.1 1</diffuse>
+        </material>
+      </visual>
+      <sensor name="rpi_hq_camera" type="camera">
+        <gz_frame_id>camera_sensor_link</gz_frame_id>
+        <topic>camera</topic>
+        <pose>0 0 0 0 0 0</pose>
+        <!-- The reduced rate keeps camera traffic within bridge capacity. -->
+        <update_rate>2</update_rate>
+        <camera>
+          <horizontal_fov>0.9652</horizontal_fov>
+          <!-- One-third sensor resolution is used for simulation throughput. -->
+          <image>
+            <width>1352</width>
+            <height>1013</height>
+            <format>R8G8B8</format>
+          </image>
+          <clip>
+            <near>0.05</near>
+            <far>50.0</far>
+          </clip>
+          <noise>
+            <type>gaussian</type>
+            <mean>0.0</mean>
+            <stddev>0.005</stddev>
+          </noise>
+        </camera>
+        <always_on>1</always_on>
+        <visualize>false</visualize>
+      </sensor>
+    </link>
+    <joint name="gimbal_pitch_joint" type="revolute">
+      <parent>gimbal_yaw_link</parent>
+      <child>camera_sensor_link</child>
+      <!-- Joint limits account for the camera link's fixed offset. -->
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <lower>-1.745329</lower>
+          <upper>0.174533</upper>
+          <effort>1.0</effort>
+          <velocity>1.047198</velocity>
+        </limit>
+        <dynamics><damping>0.08</damping></dynamics>
+      </axis>
+    </joint>
+
+    <plugin filename="gz-sim-joint-position-controller-system"
+            name="gz::sim::systems::JointPositionController">
+      <joint_name>gimbal_yaw_joint</joint_name>
+      <sub_topic>command/gimbal_yaw</sub_topic>
+      <p_gain>0.8</p_gain>
+      <i_gain>0.01245</i_gain>
+      <d_gain>0.015</d_gain>
+      <i_max>0.0</i_max>
+      <i_min>0.0</i_min>
+      <cmd_max>0.3</cmd_max>
+      <cmd_min>-0.3</cmd_min>
+    </plugin>
+    <plugin filename="gz-sim-joint-position-controller-system"
+            name="gz::sim::systems::JointPositionController">
+      <joint_name>gimbal_pitch_joint</joint_name>
+      <sub_topic>command/gimbal_pitch</sub_topic>
+      <p_gain>0.8</p_gain>
+      <i_gain>0.01245</i_gain>
+      <d_gain>0.015</d_gain>
+      <i_max>0.0</i_max>
+      <i_min>0.0</i_min>
+      <cmd_max>0.3</cmd_max>
+      <cmd_min>-0.3</cmd_min>
+    </plugin>
+    <plugin filename="gz-sim-joint-state-publisher-system"
+            name="gz::sim::systems::JointStatePublisher">
+      <topic>/gimbal/joint_state_gz</topic>
+      <joint_name>gimbal_yaw_joint</joint_name>
+      <joint_name>gimbal_pitch_joint</joint_name>
+    </plugin>
+    <!-- Companion-computer mass uses a Jetson Orin Nano reference. -->
+    <link name="companion_computer_link">
+      <pose relative_to="base_link">0 0 0.05 0 0 0</pose>
+      <inertial>
+        <mass>0.176</mass>
+        <inertia>
+          <ixx>0.000098</ixx>
+          <iyy>0.000153</iyy>
+          <izz>0.000238</izz>
+          <ixy>0.0</ixy>
+          <ixz>0.0</ixz>
+          <iyz>0.0</iyz>
+        </inertia>
+      </inertial>
+      <visual name="visual">
+        <geometry>
+          <box>
+            <size>0.100 0.079 0.021</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.15 0.35 0.15 1</ambient>
+          <diffuse>0.15 0.35 0.15 1</diffuse>
+        </material>
+      </visual>
+    </link>
+    <joint name="companion_computer_joint" type="fixed">
+      <parent>base_link</parent>
+      <child>companion_computer_link</child>
+    </joint>
+    <!-- 4S 5000 mAh battery with a constant estimated flight load. -->
+    <plugin filename="gz-sim-linearbatteryplugin-system"
+            name="gz::sim::systems::LinearBatteryPlugin">
+      <battery_name>flight_battery</battery_name>
+      <voltage>16.8</voltage>
+      <open_circuit_voltage_constant_coef>16.8</open_circuit_voltage_constant_coef>
+      <open_circuit_voltage_linear_coef>0.0</open_circuit_voltage_linear_coef>
+      <initial_charge>5.0</initial_charge>
+      <capacity>5.0</capacity>
+      <resistance>0.0</resistance>
+      <smooth_current_tau>2.0</smooth_current_tau>
+      <power_load>463.8</power_load>
+      <!-- Required by the Gazebo battery-plugin issue 225 correction. -->
+      <fix_issue_225>true</fix_issue_225>
+      <start_on_motion>true</start_on_motion>
+      <!-- Recharge is accelerated for practical simulation runs. -->
+      <enable_recharge>true</enable_recharge>
+      <charging_time>0.01</charging_time>
+      <recharge_by_topic>true</recharge_by_topic>
+    </plugin>
+  </model>
+</sdf>
